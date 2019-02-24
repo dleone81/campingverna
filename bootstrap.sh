@@ -118,6 +118,29 @@ service postfix reload
 service postfix restart
 newaliases
 
+echo "iptables rules"
+iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+iptables -I INPUT -p tcp -s 127.0.0.1 --dport 3306 -j ACCEPT
+iptables -A INPUT -j DROP
+iptables-save
+
+bash -c "iptables-save > /etc/iptables.rules"
+cd /etc/network/if-pre-up.d/
+cp /usr/local/config/iptables/iptablesload .
+cd /etc/network/if-post-down.d/
+cp /usr/local/config/iptables/iptablessave .
+chmod +x /etc/network/if-pre-up.d/iptablesload
+chmod +x /etc/network/if-post-down.d/iptablessave
+
+echo "Installo certbot"
+# refs https://www.digitalocean.com/community/tutorials/how-to-secure-apache-with-let-s-encrypt-on-ubuntu-16-04
+add-apt-repository ppa:certbot/certbot
+apt-get update
+apt-get install python-certbot-nginx -y
+
 echo "Ricarico e riavvio i servizi"
 service php7.2-fpm force-reload
 service php7.2-fpm restart
